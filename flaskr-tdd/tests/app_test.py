@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 
 from project.app import app, db
+from project.models import Post
 
 TEST_DB = "test.db"
 
@@ -48,6 +49,17 @@ def test_empty_db(client):
     """Ensure database is blank"""
     rv = client.get("/")
     assert b"No entries yet. Add some!" in rv.data
+
+
+def test_search(client):
+    """Ensure that search displays matching entries."""
+    db.session.add(Post("Searchable title", "Searchable text"))
+    db.session.commit()
+
+    response = client.get("/search/?query=Searchable")
+
+    assert response.status_code == 200
+    assert b"Searchable" in response.data
 
 
 def test_login_logout(client):
