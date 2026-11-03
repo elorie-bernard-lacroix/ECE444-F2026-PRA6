@@ -3,7 +3,9 @@ import pytest
 from pathlib import Path
 import json
 
-from project.app import app, db
+from flask import session
+
+from project.app import app, db, login_required
 from project.models import Post
 
 TEST_DB = "test.db"
@@ -62,6 +64,34 @@ def test_search(client):
     assert b"Searchable" in response.data
 
 
+def test_login_required(client):
+    """Ensure protected functions require an authenticated session."""
+    called = False
+
+    @login_required
+    def protected_view():
+        nonlocal called
+        called = True
+        return "success"
+
+    with app.test_request_context("/protected"):
+        response, status_code = protected_view()
+
+    assert status_code == 401
+    assert response.get_json() == {
+        "status": 0,
+        "message": "Please log in.",
+    }
+    assert called is False
+
+    with app.test_request_context("/protected"):
+        session["logged_in"] = True
+        response = protected_view()
+
+    assert response == "success"
+    assert called is True
+
+
 def test_login_logout(client):
     """Test login and logout using helper functions"""
     rv = login(client, app.config["USERNAME"], app.config["PASSWORD"])
@@ -89,7 +119,11 @@ def test_messages(client):
 
 def test_delete_message(client):
     """Ensure the messages are being deleted"""
-    rv = client.get('/delete/1')
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+    assert data["status"] == 0
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    rv = client.get("/delete/1")
     data = json.loads(rv.data)
     assert data["status"] == 1
 
