@@ -120,6 +120,7 @@ def search():
     entries = db.session.query(models.Post)
     if query:
         return render_template("search.html", entries=entries, query=query)
+    
     return render_template("search.html")
 
 

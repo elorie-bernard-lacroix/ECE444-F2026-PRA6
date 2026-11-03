@@ -55,6 +55,31 @@ def test_search(client):
     assert b"Searchable" in response.data
 
 
+def test_search_only_text(client):
+    """Ensure that search displays matching entries when searching only by text."""
+    db.session.add(Post("Another title", "Searchable text"))
+    db.session.commit()
+
+    response = client.get("/search/?query=Searchable")
+
+    assert response.status_code == 200
+    assert b"Another title" in response.data
+
+
+def test_search_multiple_results(client):
+    """Ensure that search displays multiple matching entries."""
+    db.session.add(Post("Searchable title 1", "Searchable text 1"))
+    db.session.add(Post("Searchable title 2", "Searchable text 2"))
+    db.session.add(Post("Non-searchable title", "Non-searchable text"))
+    db.session.commit()
+
+    response = client.get("/search/?query=Searchable")
+
+    assert response.status_code == 200
+    assert b"Searchable title 1" in response.data
+    assert b"Searchable title 2" in response.data
+
+
 def test_login_required(client):
     """Ensure protected functions require an authenticated session."""
     called = False
