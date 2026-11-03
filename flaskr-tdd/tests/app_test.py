@@ -5,21 +5,12 @@ import json
 
 from flask import session
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+TEST_DB = BASE_DIR / "test.db"
+os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB}"
+
 from project.app import app, db, login_required
 from project.models import Post
-
-TEST_DB = "test.db"
-
-
-@pytest.fixture
-def client():
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    app.config["TESTING"] = True
-    app.config["DATABASE"] = BASE_DIR.joinpath(TEST_DB)
-
-    init_db() # setup
-    yield app.test_client() # tests run here
-    init_db() # teardown
 
 
 def login(client, username, password):
@@ -43,7 +34,7 @@ def test_index(client):
 
 def test_database(client):
     """initial test. ensure that the database exists"""
-    tester = Path("test.db").is_file()
+    tester = TEST_DB.is_file()
     assert tester
 
 
@@ -130,11 +121,8 @@ def test_delete_message(client):
 
 @pytest.fixture
 def client():
-    BASE_DIR = Path(__file__).resolve().parent.parent
     app.config["TESTING"] = True
-    app.config["DATABASE"] = BASE_DIR.joinpath(TEST_DB)
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{BASE_DIR.joinpath(TEST_DB)}"
-
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     with app.app_context():
         db.create_all()  # setup
         yield app.test_client()  # tests run here
